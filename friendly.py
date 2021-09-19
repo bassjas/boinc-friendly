@@ -44,7 +44,7 @@ Average:        all      1.21     66.69     31.64      0.00      0.40      0.05"
         data['idle'] = float(final_line[7])
         return data
         
-    def __init__(self, minutes=60):
+    def __init__(self, minutes=30):
         """Gather sar data averaged from minutes ago"""
         self.data = Sysstat._sar(minutes)
 
@@ -148,6 +148,28 @@ def set_boinc_lower(boinc):
     if new_cpus != cpus or new_limit != limit:
         set_boinc(boinc, new_cpus, new_limit)
 
+def carefully_lower(boinc):
+    # We'll change number of cpus but limit is alway 100%
+    # Drop 20% of CPUS each time we're called
+    # Repeat until only 20% of cpus are still working
+
+    new_pct = boinc.get_max_cpus() - 20
+    
+    if new_pct < 20:
+        new_pct = 20
+        set_boinc(boinc, new_pct, 100)
+
+def carefully_raise(boinc):
+    # We'll change number of cpus but limit is alway 100%
+    # Raise 10% of CPUS each time we're called
+    # Repeat until 100% of cpus are working
+
+    new_pct = boinc.get_max_cpus() + 10
+    
+    if new_pct > 100:
+        new_pct = 100
+        set_boinc(boinc, new_pct, 100)
+
 def set_boinc_higher(boinc):
     cpus = new_cpus = boinc.get_max_cpus()
     limit = new_limit = boinc.get_cpu_limit()
@@ -178,26 +200,26 @@ def set_boinc(boinc, cpus, limit):
     boinc.reload_global_prefs()
 
 def main():
-    # Get sar stats for the last 60 minutes
-    stats = Sysstat()
+    # Get sar stats for the last 30 minutes
+    stats = Sysstat(30)
     
     # Get current level of BIONC effort
     boinc = Boinc()
     boinc.read_global_prefs()
 
-    logging.info("Steal time: %f; ncpu_pct: %i; cpu_limit: %i",
+    logging.info("Steal: %f; cpus: %i; limit: %i",
             stats.get_steal_time(), boinc.get_max_cpus(),
             boinc.get_cpu_limit())
 
-    if stats.get_steal_time() > 50 and boinc.get_max_cpus() > 25:
+    if stats.get_steal_time() > 50 and boinc.get_max_cpus() > 20:
         logging.info("Setting BOINC to minimum")
-        set_boinc(boinc, cpus = 25, limit = 50)
-    elif stats.get_steal_time() > 20 and boinc.get_max_cpus() > 25:
+        set_boinc(boinc, cpus = 20, limit = 100)
+    elif stats.get_steal_time() > 20 and boinc.get_max_cpus() > 20:
         logging.info("Attempting to lower BOINC workload")
-        set_boinc_lower(boinc)
+        carefully_lower(boinc)
     elif boinc.get_max_cpus() < 100:
         logging.info("Attempting to raise BOINC workload")
-        set_boinc_higher(boinc)
+        carefully_raise(boinc)
 
 
 if __name__ == "__main__":
