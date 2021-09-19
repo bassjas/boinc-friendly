@@ -61,7 +61,7 @@ class Boinc:
 
     _global_filename = '/var/lib/boinc/global_prefs_override.xml'
     #_global_filename = 'c:/Users/bassj/Projects/Stealmon/global_prefs_override.xml'
-
+    
     def __init__(self):
         self.max_ncpus_pct = 0
         self.cpu_usage_limit = 0        
@@ -125,73 +125,25 @@ class Boinc:
         print("Max number of CPUs: {}".format(b.get_max_cpus()))
         print("Max CPU workload: {}".format(b.get_cpu_limit()))
 
+def cpu_limit(steal_time=0.0):
+        # If steal_time is greater than X : Y is new percent of CPUs to use
+        thresholds = {
+            50 : 25,
+            35 : 35,
+            20 : 50,
+            15 : 60,
+            10 : 70,
+            5 : 80,
+            1 : 90,
+            0 : 100,
+        }
 
-def set_boinc_lower(boinc):
-    cpus = new_cpus = boinc.get_max_cpus() # Number of CPUs assigned to BOINC
-    limit = new_limit = boinc.get_cpu_limit() # per-CPU workload in percent
+        for level, threshold in thresholds.items():
+            if steal_time > level:
+                break
+        return threshold
 
-    if cpus == 25 and limit == 50: # Already at lowest setting
-        logging.debug("Already at lowest setting")
-        return
-
-    if cpus > 25:
-        new_cpus = cpus - 25
-    if limit > 50:
-        new_limit = 50
-    
-    # These are the lowest limits I'm prepared to go
-    if new_cpus < 25:
-        new_cpus = 25
-    if limit < 50:
-        new_limit = 50
-
-    if new_cpus != cpus or new_limit != limit:
-        set_boinc(boinc, new_cpus, new_limit)
-
-def carefully_lower(boinc):
-    # We'll change number of cpus but limit is alway 100%
-    # Drop 20% of CPUS each time we're called
-    # Repeat until only 20% of cpus are still working
-
-    new_pct = boinc.get_max_cpus() - 20
-    
-    if new_pct < 20:
-        new_pct = 20
-        set_boinc(boinc, new_pct, 100)
-
-def carefully_raise(boinc):
-    # We'll change number of cpus but limit is alway 100%
-    # Raise 10% of CPUS each time we're called
-    # Repeat until 100% of cpus are working
-
-    new_pct = boinc.get_max_cpus() + 10
-    
-    if new_pct > 100:
-        new_pct = 100
-        set_boinc(boinc, new_pct, 100)
-
-def set_boinc_higher(boinc):
-    cpus = new_cpus = boinc.get_max_cpus()
-    limit = new_limit = boinc.get_cpu_limit()
-
-    if cpus == 100 and limit == 100: # Already at highest setting
-        return
-
-    if limit < 100:
-        new_limit = 100
-    elif cpus < 100:
-        new_cpus = cpus + 25
-
-    # Enforce maximum value limit
-    if new_cpus > 100:
-        new_cpus = 100
-    if new_limit > 100:
-        new_limit = 100
-
-    if new_cpus != cpus or new_limit != limit:
-        set_boinc(boinc, new_cpus, new_limit)
-
-def set_boinc(boinc, cpus, limit):
+def set_boinc(boinc, cpus = 100, limit = 100):
     logging.info("Setting max_ncpus_pct = %i; cpu_usage_limit = %i",
                             cpus, limit)
     boinc.set_max_cpus(cpus)
@@ -207,19 +159,10 @@ def main():
     boinc = Boinc()
     boinc.read_global_prefs()
 
-    logging.info("Steal: %f; cpus: %i; limit: %i",
-            stats.get_steal_time(), boinc.get_max_cpus(),
-            boinc.get_cpu_limit())
-
-    if stats.get_steal_time() > 50 and boinc.get_max_cpus() > 20:
-        logging.info("Setting BOINC to minimum")
-        set_boinc(boinc, cpus = 20, limit = 100)
-    elif stats.get_steal_time() > 20 and boinc.get_max_cpus() > 20:
-        logging.info("Attempting to lower BOINC workload")
-        carefully_lower(boinc)
-    elif boinc.get_max_cpus() < 100:
-        logging.info("Attempting to raise BOINC workload")
-        carefully_raise(boinc)
+    cpus = cpu_limit(stats.get_steal_time())
+    if boinc.get_max_cpus() != cpus:
+        logging.info("Steal: %f; Setting cpu% to %n", stats.get_steal_time(), cpus)
+        set_boinc(boinc, cpus)
 
 
 if __name__ == "__main__":
