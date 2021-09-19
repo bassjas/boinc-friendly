@@ -146,7 +146,7 @@ def set_boinc_lower(boinc):
         new_limit = 50
 
     if new_cpus != cpus or new_limit != limit:
-        set_boinc(new_cpus, new_limit)
+        set_boinc(boinc, new_cpus, new_limit)
 
 def set_boinc_higher(boinc):
     cpus = new_cpus = boinc.get_max_cpus()
@@ -167,9 +167,9 @@ def set_boinc_higher(boinc):
         new_limit = 100
 
     if new_cpus != cpus or new_limit != limit:
-        set_boinc(new_cpus, new_limit)
+        set_boinc(boinc, new_cpus, new_limit)
 
-def set_boinc(cpus, limit):
+def set_boinc(boinc, cpus, limit):
     logging.info("Setting max_ncpus_pct = %i; cpu_usage_limit = %i",
                             cpus, limit)
     boinc.set_max_cpus(cpus)
@@ -191,7 +191,7 @@ def main():
 
     if stats.get_steal_time() > 50 and boinc.get_max_cpus() > 25:
         logging.info("Setting BOINC to minimum")
-        set_boinc(cpus = 25, limit = 50)
+        set_boinc(boinc, cpus = 25, limit = 50)
     elif stats.get_steal_time() > 20 and boinc.get_max_cpus() > 25:
         logging.info("Attempting to lower BOINC workload")
         set_boinc_lower(boinc)
