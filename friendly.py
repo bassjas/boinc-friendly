@@ -161,7 +161,7 @@ def main():
 
     cpus = cpu_limit(stats.get_steal_time())
     if boinc.get_max_cpus() != cpus:
-        logging.info("Steal: %f; Setting cpu% to %n", stats.get_steal_time(), cpus)
+        logging.info("Steal: %f; Setting cpu%% to %i", stats.get_steal_time(), cpus)
         set_boinc(boinc, cpus)
 
 
