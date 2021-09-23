@@ -41,7 +41,7 @@ class Top:
             result = process.stdout
         
         m = self._pattern.search(result)
-        self.steal_time = m.group()
+        self.steal_time = float(m.group())
 
     def get_stealtime(self):
         return self.steal_time
