@@ -30,7 +30,7 @@ class Top:
 
         if self._pattern == None:
             # This pattern looks for '0.0 st' or '00.0 st' followed by a word boundary.
-            self._pattern = re.compile(r'\d?\d\.\d st\b')
+            self._pattern = re.compile(r'(\d?\d\.\d) st\b')
         
         if fake_it:
             result = self._fake_top_str
@@ -41,7 +41,7 @@ class Top:
             result = process.stdout
         
         m = self._pattern.search(result)
-        self.steal_time = float(m.group())
+        self.steal_time = float(m.group(1))
 
     def get_stealtime(self):
         return self.steal_time
