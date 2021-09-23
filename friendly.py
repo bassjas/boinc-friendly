@@ -1,61 +1,14 @@
 import logging
 import re
 import subprocess
+import time
 from datetime import datetime, timedelta
+from top import Top
 
-logging.basicConfig(filename='/var/log/stealmon.log', level=logging.INFO,
+# logging.basicConfig(filename='/var/log/stealmon.log', level=logging.INFO,
+#         format='%(asctime)s:%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO,
         format='%(asctime)s:%(levelname)s: %(message)s')
-
-
-class Sysstat:
-
-    # Eventually execute system command to get current sar data.
-    # For now, fake it.
-    _sample = """09:35:01 PM     CPU     %user     %nice   %system   %iowait    %steal     %idle
-09:45:01 PM     all      1.27     79.32     18.95      0.00      0.46      0.00
-09:55:01 PM     all      1.28     79.18     19.10      0.00      0.43      0.02
-Average:        all      1.21     66.69     31.64      0.00      0.40      0.05"""
-
-    def _split_sar_line(line):
-        return re.split('  +', line)
-
-    def _get_last_line(input):
-        input = str(input)
-        newline = input.strip().rindex('\n')
-        lastline = input[newline + 1:]
-        lastline = Sysstat._split_sar_line(lastline)
-        return lastline
-
-    def _sar(mins_ago):
-        #sar_data = Sysstat._sample
-        hourago = datetime.today() - timedelta(minutes=mins_ago)
-        timestring = hourago.strftime('%H:%M')
-        process = subprocess.run(['sar', '-s', '{}'.format(timestring), '-u'], 
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
-            universal_newlines=True)
-
-        final_line = Sysstat._get_last_line(process.stdout)
-        data = {}
-        data["user"] = float(final_line[2])
-        data['nice'] = float(final_line[3])
-        data['system'] = float(final_line[4])
-        data['iowait'] = float(final_line[5])
-        data['steal'] = float(final_line[6])
-        data['idle'] = float(final_line[7])
-        return data
-        
-    def __init__(self, minutes=30):
-        """Gather sar data averaged from minutes ago"""
-        self.data = Sysstat._sar(minutes)
-
-    def get_steal_time(self):
-        return self.data['steal']
-    
-    def _main():
-        stat = Sysstat()
-        print("Current steal time: {}".format(stat.get_steal_time()))
-
-    
 
 class Boinc:
 
@@ -97,8 +50,8 @@ class Boinc:
 
     def write_global_prefs(self):
         f = open(self._global_filename, 'w')
-        f.write(
-"""<global_preferences>
+        f.write("""
+<global_preferences>
     <max_ncpus_pct>{}</max_ncpus_pct>
     <cpu_usage_limit>{}</cpu_usage_limit>
 </global_preferences>""".format(self.max_ncpus_pct, self.cpu_usage_limit))
@@ -152,17 +105,27 @@ def set_boinc(boinc, cpus = 100, limit = 100):
     boinc.reload_global_prefs()
 
 def main():
-    # Get sar stats for the last 30 minutes
-    stats = Sysstat(30)
-    
-    # Get current level of BIONC effort
-    boinc = Boinc()
-    boinc.read_global_prefs()
 
-    cpus = cpu_limit(stats.get_steal_time())
-    if boinc.get_max_cpus() != cpus:
-        logging.info("Steal: %f; Setting cpu%% to %i", stats.get_steal_time(), cpus)
-        set_boinc(boinc, cpus)
+# I started this "while True" thing to make a daemon out of friendly.py
+# but if I did that I'd want to use top rather than sar as my source of
+# info because sar doesn't really change minute-by-minute.
+# I should probably start a new file to do that. Or add a new class
+# to handle top.
+
+    while True:
+        # Get current level of BIONC effort
+        boinc = Boinc()
+        boinc.read_global_prefs()
+
+        # Get steal time from top
+        stealtime = Top().get_stealtime()
+
+        cpus = cpu_limit(stealtime)
+        if boinc.get_max_cpus() != cpus:
+            logging.info("Steal: %f; Setting cpu%% to %i", stealtime, cpus)
+            set_boinc(boinc, cpus)
+
+        time.sleep(10)
 
 
 if __name__ == "__main__":

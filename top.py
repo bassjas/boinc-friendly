@@ -46,5 +46,9 @@ class Top:
     def get_stealtime(self):
         return self.steal_time
 
-top = Top(fake_it=True)
-print(top.get_stealtime())
+    def _main():
+        top = Top(fake_it=True)
+        print(top.get_stealtime())
+
+if __name__ == "__main__":
+    Top._main()
