@@ -129,16 +129,18 @@ def main():
             raise_delay = 0
         elif boinc.get_max_cpus() > cpus:
             # Turn down cpus right away
-            logging.info("Steal: %f; Setting cpu%% to %i", stealtime, cpus)
+            logging.info("Steal: %.1f; Setting cpu%% to %i", stealtime, cpus)
             set_boinc(boinc,cpus)
             raise_delay = 0
         elif boinc.get_max_cpus() < cpus:
             # We turn up cpus slowly, using a delay since last change
             raise_delay += 1
             if raise_delay > 3:
-                logging.info("Steal: %f; Setting cpu%% to %i", stealtime, cpus)
+                logging.info("Steal: %.1f; Setting cpu%% to %i", stealtime, cpus)
                 set_boinc(boinc, cpus)
                 raise_delay = 0
+            else:
+                logging.info("Steal: %.1f; incrementing delay count: %i", stealtime, raise_delay)
 
         time.sleep(10)
 
