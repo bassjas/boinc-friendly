@@ -5,7 +5,7 @@ import time
 from datetime import datetime, timedelta
 from top import Top
 
-logger = logging.getLogger()
+module_logger = logging.getLogger('boinc-friendly')
 # create file handler which logs even debug messages
 fh = logging.FileHandler('/var/log/stealmon.log')
 fh.setLevel(logging.DEBUG)
@@ -17,8 +17,8 @@ formatter = logging.Formatter('%(asctime)s:%(levelname)s: %(message)s')
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 # add the handlers to the logger
-logger.addHandler(fh)
-logger.addHandler(ch)
+module_logger.addHandler(fh)
+module_logger.addHandler(ch)
 
 class Boinc:
 
@@ -107,7 +107,7 @@ def cpu_limit(steal_time=0.0):
         return threshold
 
 def set_boinc(boinc, cpus = 100, limit = 100):
-    logging.debug("Setting max_ncpus_pct = %i; cpu_usage_limit = %i",
+    module_logger.debug("Setting max_ncpus_pct = %i; cpu_usage_limit = %i",
                             cpus, limit)
     boinc.set_max_cpus(cpus)
     boinc.set_cpu_limit(limit)
@@ -138,18 +138,18 @@ def main():
             raise_delay = 0
         elif boinc.get_max_cpus() > cpus:
             # Turn down cpus right away
-            logging.info("Steal: %.1f; Setting cpu%% to %i", stealtime, cpus)
+            module_logger.info("Steal: %.1f; Setting cpu%% to %i", stealtime, cpus)
             set_boinc(boinc,cpus)
             raise_delay = 0
         elif boinc.get_max_cpus() < cpus:
             # We turn up cpus slowly, using a delay since last change
             if raise_delay > 3:
-                logging.info("Steal: %.1f; Setting cpu%% to %i", stealtime, cpus)
+                module_logger.info("Steal: %.1f; Setting cpu%% to %i", stealtime, cpus)
                 set_boinc(boinc, cpus)
                 raise_delay = 0
             else:
                 raise_delay += 1
-                logging.debug("Steal: %.1f; incrementing raise delay: %i", stealtime, raise_delay)
+                module_logger.debug("Steal: %.1f; incrementing raise delay: %i", stealtime, raise_delay)
 
         time.sleep(10)
 
