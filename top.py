@@ -1,5 +1,6 @@
 import re
 import subprocess
+import logging
 
 class Top:
     """Encapsulate the 'top' command to get the current CPU steal time"""
@@ -41,7 +42,11 @@ class Top:
             result = process.stdout
         
         m = self._pattern.search(result)
-        self.steal_time = float(m.group(1))
+        if m.group():
+            self.steal_time = float(m.group(1))
+        else:
+            logging.getLogger(__name__).error("Top returned no steal time value; using 0.0f")
+            self.steal_time = 0.0
 
     def get_stealtime(self):
         return self.steal_time

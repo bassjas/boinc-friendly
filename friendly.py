@@ -5,11 +5,21 @@ import time
 from datetime import datetime, timedelta
 from top import Top
 
-# logging.basicConfig(filename='/var/log/stealmon.log', level=logging.INFO,
-#         format='%(asctime)s:%(levelname)s: %(message)s')
-logging.basicConfig(filename='/var/log/stealmon.log', level=logging.INFO,
-        format='%(asctime)s:%(levelname)s: %(message)s')
-logging.getLogger().addHandler(logging.StreamHandler()) # Write to stderr too
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+# create file handler which logs even debug messages
+fh = logging.FileHandler('/var/log/stealmon.log')
+fh.setLevel(logging.DEBUG)
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s:%(levelname)s: %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add the handlers to the logger
+logger.addHandler(fh)
+logger.addHandler(ch)
 
 class Boinc:
 
@@ -140,7 +150,7 @@ def main():
                 raise_delay = 0
             else:
                 raise_delay += 1
-                logging.info("Steal: %.1f; incrementing raise delay: %i", stealtime, raise_delay)
+                logging.debug("Steal: %.1f; incrementing raise delay: %i", stealtime, raise_delay)
 
         time.sleep(10)
 
