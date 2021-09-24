@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timedelta
 from top import Top
 
+logging.basicConfig(level=logging.DEBUG)
 module_logger = logging.getLogger('boinc-friendly')
 # create file handler which logs even debug messages
 fh = logging.FileHandler('/var/log/stealmon.log')
