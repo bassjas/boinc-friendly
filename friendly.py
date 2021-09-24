@@ -127,7 +127,6 @@ def main():
             # Reset the raise_delay because conditions are not met to 
             # raise the CPU
             raise_delay = 0
-            logging.info("Steal: %.1f; resetting raise delay: %i", stealtime, raise_delay)
         elif boinc.get_max_cpus() > cpus:
             # Turn down cpus right away
             logging.info("Steal: %.1f; Setting cpu%% to %i", stealtime, cpus)
