@@ -5,8 +5,7 @@ import time
 from datetime import datetime, timedelta
 from top import Top
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = logging.getLogger()
 # create file handler which logs even debug messages
 fh = logging.FileHandler('/var/log/stealmon.log')
 fh.setLevel(logging.DEBUG)

@@ -45,7 +45,7 @@ class Top:
         if m.group():
             self.steal_time = float(m.group(1))
         else:
-            logging.getLogger(__name__).error("Top returned no steal time value; using 0.0f")
+            logging.getLogger().error("Top returned no steal time value; using 0.0f")
             self.steal_time = 0.0
 
     def get_stealtime(self):
