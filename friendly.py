@@ -7,8 +7,9 @@ from top import Top
 
 # logging.basicConfig(filename='/var/log/stealmon.log', level=logging.INFO,
 #         format='%(asctime)s:%(levelname)s: %(message)s')
-logging.basicConfig(level=logging.INFO,
+logging.basicConfig(filename='/var/log/stealmon.log', level=logging.INFO,
         format='%(asctime)s:%(levelname)s: %(message)s')
+logging.getLogger().addHandler(logging.StreamHandler()) # Write to stderr too
 
 class Boinc:
 
@@ -97,7 +98,7 @@ def cpu_limit(steal_time=0.0):
         return threshold
 
 def set_boinc(boinc, cpus = 100, limit = 100):
-    logging.info("Setting max_ncpus_pct = %i; cpu_usage_limit = %i",
+    logging.debug("Setting max_ncpus_pct = %i; cpu_usage_limit = %i",
                             cpus, limit)
     boinc.set_max_cpus(cpus)
     boinc.set_cpu_limit(limit)
@@ -111,7 +112,7 @@ def main():
 # info because sar doesn't really change minute-by-minute.
 # I should probably start a new file to do that. Or add a new class
 # to handle top.
-
+    raise_delay = 0
     while True:
         # Get current level of BIONC effort
         boinc = Boinc()
@@ -119,11 +120,25 @@ def main():
 
         # Get steal time from top
         stealtime = Top().get_stealtime()
-
         cpus = cpu_limit(stealtime)
-        if boinc.get_max_cpus() != cpus:
+
+        if boinc.get_max_cpus() == cpus:
+            # CPUs are set at the correct level for the given steal time.
+            # Reset the raise_delay because conditions are not met to 
+            # raise the CPU
+            raise_delay = 0
+        elif boinc.get_max_cpus() > cpus:
+            # Turn down cpus right away
             logging.info("Steal: %f; Setting cpu%% to %i", stealtime, cpus)
-            set_boinc(boinc, cpus)
+            set_boinc(boinc,cpus)
+            raise_delay = 0
+        elif boinc.get_max_cpus() < cpus:
+            # We turn up cpus slowly, using a delay since last change
+            raise_delay += 1
+            if raise_delay > 3:
+                logging.info("Steal: %f; Setting cpu%% to %i", stealtime, cpus)
+                set_boinc(boinc, cpus)
+                raise_delay = 0
 
         time.sleep(10)
 
