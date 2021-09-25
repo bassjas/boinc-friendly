@@ -100,10 +100,12 @@ def cpu_limit(steal_time=0.0):
             5 : 80,
         }
 
+        rv = 100
         for level, threshold in thresholds.items():
             if steal_time > level:
+                rv = threshold
                 break
-        return threshold
+        return rv
 
 def set_boinc(boinc, cpus = 100, limit = 100):
     logger.debug("Setting max_ncpus_pct = %i; cpu_usage_limit = %i",
