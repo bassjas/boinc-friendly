@@ -91,21 +91,39 @@ class Boinc:
         print("Max number of CPUs: {}".format(b.get_max_cpus()))
         print("Max CPU workload: {}".format(b.get_cpu_limit()))
 
-def cpu_limit(steal_time=0.0):
-        # If steal_time is greater than X : Y is new percent of CPUs to use
-        thresholds = {
-            45 : 20,
-            25 : 40,
-            15 : 60,
-            5 : 80,
-        }
+def cpu_limit(steal_time):
+    # If steal_time is greater than X : Y is new percent of CPUs to use
+    thresholds = {
+        45 : 20,
+        25 : 40,
+        15 : 60,
+        5 : 80,
+    }
 
-        rv = 100
-        for level, threshold in thresholds.items():
-            if steal_time > level:
-                rv = threshold
-                break
-        return rv
+    rv = 100
+    for level, threshold in thresholds.items():
+        if steal_time > level:
+            rv = threshold
+            break
+    return rv
+
+def cpu_bump_up(current_cpu):
+    """Given a "current" cpu percentage, return the next highest cpu percentage
+    we could bump up to
+    """
+    # This should be an exact copy of the thresholds array in cpu_limit()
+    thresholds = {
+        45 : 20,
+        25 : 40,
+        15 : 60,
+        5 : 80,
+    }
+    rv = 100
+    for level, threshold in thresholds.items():
+        if threshold > current_cpu):
+            rv = threshold
+            break
+    return rv
 
 def set_boinc(boinc, cpus = 100, limit = 100):
     logger.debug("Setting max_ncpus_pct = %i; cpu_usage_limit = %i",
@@ -124,14 +142,17 @@ def main():
 # to handle top.
     raise_delay = 0
     while True:
+        # Average steal time from top for 10 seconds
+        for steal in range(10):
+            steal += Top().get_stealtime()
+            time.sleep(1)
+        stealtime = steal / 10
+        
         # Get current level of BIONC effort
         boinc = Boinc()
         boinc.read_global_prefs()
 
-        # Get steal time from top
-        stealtime = Top().get_stealtime()
         cpus = cpu_limit(stealtime)
-
         if boinc.get_max_cpus() == cpus:
             # CPUs are set at the correct level for the given steal time.
             # Reset the raise_delay because conditions are not met to 
@@ -145,14 +166,13 @@ def main():
         elif boinc.get_max_cpus() < cpus:
             # We turn up cpus slowly, using a delay since last change
             if raise_delay > 3:
+                cpus = cpu_bump_up(boinc.get_max_cpus())
                 logger.info("Steal: %.1f; Setting cpu%% to %i", stealtime, cpus)
                 set_boinc(boinc, cpus)
                 raise_delay = 0
             else:
                 raise_delay += 1
                 logger.debug("Steal: %.1f; incrementing raise delay: %i", stealtime, raise_delay)
-
-        time.sleep(10)
 
 
 if __name__ == "__main__":
