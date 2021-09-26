@@ -120,7 +120,7 @@ def cpu_bump_up(current_cpu):
     }
     rv = 100
     for level, threshold in thresholds.items():
-        if threshold > current_cpu):
+        if threshold > current_cpu:
             rv = threshold
             break
     return rv
