@@ -85,7 +85,8 @@ class Boinc_Server:
         while True:
             # Average steal time from top for 10 seconds
             seconds = 10
-            for steal in range(seconds):
+            steal = 0
+            for counter in range(seconds):
                 steal += Top().get_stealtime()
                 time.sleep(1)
             stealtime = steal / seconds
