@@ -106,7 +106,7 @@ class Boinc_Server:
                 rv = this.bump_up(boinc)
                 if rv:
                     logger.info("Steal: %.1f; raised BOINC level of effort", stealtime)
-            elif not this.at_maximum():
+            elif not this.at_maximum(boinc):
                 raise_delay += 1
                 logger.debug("Steal: %.1f; incrementing raise delay: %i", stealtime, raise_delay)
 
