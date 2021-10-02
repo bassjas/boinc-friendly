@@ -82,7 +82,9 @@ class Boinc_Server:
     def boinc_loop(this):
         logger.info("Beginning loop")
         raise_delay = 0
-        while True:
+        loop_num = 0
+        #while True:
+        while loop_num += 1:
             # Average steal time from top for 10 seconds
             seconds = 10
             steal = 0
@@ -96,20 +98,21 @@ class Boinc_Server:
             boinc.read_global_prefs()
             
             # Does steal time indicate we should bump up or down?
+            rv = False
             if stealtime > this.steal_bump_down:
                 raise_delay = 0
                 rv = this.bump_down(boinc, stealtime > this.steal_emergency)
-                if rv:
-                    logger.info("Steal: %.1f; lowered level of effort", stealtime)
             elif raise_delay > 2:
                 raise_delay = 0
                 rv = this.bump_up(boinc)
-                if rv:
-                    logger.info("Steal: %.1f; raised BOINC level of effort", stealtime)
             elif not this.at_maximum(boinc):
                 raise_delay += 1
-                logger.debug("Steal: %.1f; incrementing raise delay: %i", stealtime, raise_delay)
-
+                logger.debug("Loop: %i; Steal: %.1f; incrementing raise delay: %i", 
+                    loop_num, stealtime, raise_delay)
+            
+            if rv:
+                logger.info("Loop: %i; Steal: %.1f; cpus: %i; limit: %i%%", 
+                    loop_num, stealtime, boinc.get_max_cpus(), boinc.get_cpu_limit())
     
 
     
