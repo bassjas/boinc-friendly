@@ -84,7 +84,8 @@ class Boinc_Server:
         raise_delay = 0
         loop_num = 0
         #while True:
-        while loop_num += 1:
+        while True:
+            loop_num += 1
             # Average steal time from top for 10 seconds
             seconds = 10
             steal = 0
