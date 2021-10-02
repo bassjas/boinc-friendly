@@ -29,7 +29,13 @@ class Boinc_Server:
         this.steal_bump_down = steal_bump_down
         this.steal_emergency = steal_emergency
 
-    def bump_down(this, emergency=False):
+    def at_maximum(this, boinc):
+        return boinc.get_max_cpus() == this.num_cpus and boinc.get_cpu_limit() == 100
+
+    def at_minimum(this, boinc):
+        return boinc.get_max_cpus() == 1 and boinc.get_cpu_limit() == 20
+
+    def bump_down(this, boinc, emergency=False):
         """
             Parameters:
             emergency - if True, immediately drop to lowest level of effort
@@ -37,17 +43,13 @@ class Boinc_Server:
             Return Values:
             rv - True if we decreased the level of effort, False otherwise
         """
-        # Get current level of BIONC effort
-        boinc = Boinc()
-        boinc.read_global_prefs()
-
         rv = True
         if emergency:
             boinc.set_max_cpus(1)
             boinc.set_cpu_limit(20)
         elif boinc.get_max_cpus() > 1:
             boinc.set_max_cpus(boinc.get_max_cpus() -1)
-        elif boinc.get_cpu_limit() > 30:
+        elif boinc.get_cpu_limit() > 20:
             boinc.set_cpu_limit(boinc.get_cpu_limit() - 10)
         else:
             # Nothing to do: already at lowest level of effort
@@ -58,15 +60,11 @@ class Boinc_Server:
             boinc.reload_global_prefs()
         return rv
 
-    def bump_up(this):
+    def bump_up(this, boinc):
         """
             Return Values:
             rv - True if we increased the level of effort, False otherwise
         """
-        # Get current BOINC level of effort
-        boinc = Boinc()
-        boinc.read_global_prefs()
-
         rv = True
         if boinc.get_cpu_limit() < 100:
             boinc.set_cpu_limit(boinc.get_cpu_limit() + 10)
@@ -91,18 +89,22 @@ class Boinc_Server:
                 steal += Top().get_stealtime()
                 time.sleep(1)
             stealtime = steal / seconds
+
+            # Get current level of BIONC effort
+            boinc = Boinc()
+            boinc.read_global_prefs()
             
             # Does steal time indicate we should bump up or down?
-            if stealtime > this.steal_bump_down and not this.at_minimum():
-                rv = bump_down(stealtime > this.steal_emergency)
+            if stealtime > this.steal_bump_down and not this.at_minimum(boinc):
+                rv = this.bump_down(boinc, stealtime > this.steal_emergency)
                 raise_delay = 0
                 if rv:
                     logger.info("Steal: %.1f; lowered level of effort", stealtime)
-            elif this.at_maximum():
+            elif this.at_maximum(boinc):
                 raise_delay = 0
             elif raise_delay > 2:
                 raise_delay = 0
-                rv = bump_up()
+                rv = this.bump_up(boinc)
                 if rv:
                     logger.info("Steal: %.1f; raised BOINC level of effort", stealtime)
             else:
