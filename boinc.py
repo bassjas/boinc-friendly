@@ -43,7 +43,7 @@ class Boinc:
         f = open(self._global_filename, 'w')
         f.write("""
 <global_preferences>
-    <max_ncpus{}</max_ncpus>
+    <max_ncpus>{}</max_ncpus>
     <cpu_usage_limit>{}</cpu_usage_limit>
 </global_preferences>""".format(self.max_ncpus, self.cpu_usage_limit))
 
