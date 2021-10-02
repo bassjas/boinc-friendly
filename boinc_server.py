@@ -33,7 +33,7 @@ class Boinc_Server:
         return boinc.get_max_cpus() == this.num_cpus and boinc.get_cpu_limit() == 100
 
     def at_minimum(this, boinc):
-        return boinc.get_max_cpus() == 1 and boinc.get_cpu_limit() == 20
+        return boinc.get_max_cpus() == 1 and boinc.get_cpu_limit() <= 20
 
     def bump_down(this, boinc, emergency=False):
         """
@@ -96,19 +96,17 @@ class Boinc_Server:
             boinc.read_global_prefs()
             
             # Does steal time indicate we should bump up or down?
-            if stealtime > this.steal_bump_down and not this.at_minimum(boinc):
-                rv = this.bump_down(boinc, stealtime > this.steal_emergency)
+            if stealtime > this.steal_bump_down:
                 raise_delay = 0
+                rv = this.bump_down(boinc, stealtime > this.steal_emergency)
                 if rv:
                     logger.info("Steal: %.1f; lowered level of effort", stealtime)
-            elif this.at_maximum(boinc):
-                raise_delay = 0
             elif raise_delay > 2:
                 raise_delay = 0
                 rv = this.bump_up(boinc)
                 if rv:
                     logger.info("Steal: %.1f; raised BOINC level of effort", stealtime)
-            else:
+            elif not this.at_maximum():
                 raise_delay += 1
                 logger.debug("Steal: %.1f; incrementing raise delay: %i", stealtime, raise_delay)
 
