@@ -72,7 +72,7 @@ class Boinc_Server:
             boinc.set_cpu_limit(this.current_limit)
         elif this.current_cpus < this.total_cpus:
             this.current_cpus += 1
-            boinc.set_max_cpus(this.current_cpus)
+            boinc.set_max_cpus(int(this.current_cpus / this.total_cpus * 100))
         else:
             # Already at highest level of effort
             rv = False

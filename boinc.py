@@ -7,16 +7,16 @@ class Boinc:
     #_global_filename = 'c:/Users/bassj/Projects/Stealmon/global_prefs_override.xml'
     
     def __init__(self):
-        self.max_ncpus = 0
+        self.max_ncpus_pct = 0
         self.cpu_usage_limit = 0        
 
     def get_max_cpus(self):
-        return self.max_ncpus
+        return self.max_ncpus_pct
 
     def set_max_cpus(self, pct):
         if pct < 0 or pct > 100:
             raise ValueError("Requires percentage from 0 to 100")
-        self.max_ncpus = pct
+        self.max_ncpus_pct = pct
 
     def get_cpu_limit(self):
         return self.cpu_usage_limit
@@ -32,7 +32,7 @@ class Boinc:
             if 'max_ncpus' in line:
                 left_caret = line.index('>')
                 right_caret = line.rindex('<')
-                self.max_ncpus = int(line[left_caret + 1:right_caret])
+                self.max_ncpus_pct = int(line[left_caret + 1:right_caret])
                 
             elif 'cpu_usage_limit' in line:
                 left_caret = line.index('>')
@@ -44,7 +44,7 @@ class Boinc:
         f.write("""<global_preferences>
     <max_ncpus_pct>{}</max_ncpus_pct>
     <cpu_usage_limit>{}</cpu_usage_limit>
-</global_preferences>""".format(self.max_ncpus, self.cpu_usage_limit))
+</global_preferences>""".format(self.max_ncpus_pct, self.cpu_usage_limit))
 
     def reload_global_prefs(self):
         """Execute shell command to reload BOINC global preferences"""
