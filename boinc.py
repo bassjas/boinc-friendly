@@ -41,9 +41,8 @@ class Boinc:
 
     def write_global_prefs(self):
         f = open(self._global_filename, 'w')
-        f.write("""
-<global_preferences>
-    <max_ncpus>{}</max_ncpus>
+        f.write("""<global_preferences>
+    <max_ncpus_pct>{}</max_ncpus_pct>
     <cpu_usage_limit>{}</cpu_usage_limit>
 </global_preferences>""".format(self.max_ncpus, self.cpu_usage_limit))
 
