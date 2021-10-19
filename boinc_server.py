@@ -28,8 +28,12 @@ class Boinc_Server:
         this.total_cpus = num_cpus
         this.steal_bump_down = steal_bump_down
         this.steal_emergency = steal_emergency
-        this.current_cpus = num_cpus
-        this.current_limit = 100
+
+        # Read current boinc values for this server
+        this.boinc = Boinc()
+        this.boinc.read_global_prefs()
+        this.current_cpus = int(this.boinc.get_max_cpus() * this.total_cpus / 100)
+        this.current_limit = this.boinc.get_cpu_limit()
 
     def at_maximum(this):
         return this.current_cpus == this.total_cpus and this.current_limit == 100
@@ -37,7 +41,7 @@ class Boinc_Server:
     def at_minimum(this):
         return this.current_cpus == 1 and this.current_limit <= 20
 
-    def bump_down(this, boinc, emergency=False):
+    def bump_down(this, emergency=False):
         """
             Parameters:
             emergency - if True, immediately drop to lowest level of effort
@@ -47,21 +51,21 @@ class Boinc_Server:
         """
         rv = True
         if emergency:
-            boinc.set_max_cpus(int(100 / this.total_cpus))
-            boinc.set_cpu_limit(20)
+            this.boinc.set_max_cpus(int(100 / this.total_cpus))
+            this.boinc.set_cpu_limit(20)
         elif this.current_cpus > 1:
             this.current_cpus -= 1
-            boinc.set_max_cpus(int(this.current_cpus / this.total_cpus * 100))
+            this.boinc.set_max_cpus(int(this.current_cpus / this.total_cpus * 100))
         elif this.current_limit > 20:
             this.current_limit -= 10
-            boinc.set_cpu_limit(this.current_limit)
+            this.boinc.set_cpu_limit(this.current_limit)
         else:
             # Nothing to do: already at lowest level of effort
             rv = False
 
         return rv
 
-    def bump_up(this, boinc):
+    def bump_up(this):
         """
             Return Values:
             rv - True if we increased the level of effort, False otherwise
@@ -69,10 +73,10 @@ class Boinc_Server:
         rv = True
         if this.current_limit < 100:
             this.current_limit += 10
-            boinc.set_cpu_limit(this.current_limit)
+            this.boinc.set_cpu_limit(this.current_limit)
         elif this.current_cpus < this.total_cpus:
             this.current_cpus += 1
-            boinc.set_max_cpus(int(this.current_cpus / this.total_cpus * 100))
+            this.boinc.set_max_cpus(int(this.current_cpus / this.total_cpus * 100))
         else:
             # Already at highest level of effort
             rv = False
@@ -81,6 +85,8 @@ class Boinc_Server:
 
     def boinc_loop(this):
         logger.info("Beginning loop")
+        logger.info("Max cpus: %i%%; cpu limit: %i%%", this.boinc.get_max_cpus(),
+                this.boinc.get_cpu_limit())
         raise_delay = 0
         loop_num = 0
         #while True:
@@ -93,19 +99,15 @@ class Boinc_Server:
                 steal += Top().get_stealtime()
                 time.sleep(1)
             stealtime = steal / seconds
-
-            # Get current level of BIONC effort
-            boinc = Boinc()
-            #boinc.read_global_prefs()
             
             # Does steal time indicate we should bump up or down?
             rv = False
             if stealtime > this.steal_bump_down:
                 raise_delay = 0
-                rv = this.bump_down(boinc, stealtime > this.steal_emergency)
+                rv = this.bump_down(stealtime > this.steal_emergency)
             elif raise_delay > 2:
                 raise_delay = 0
-                rv = this.bump_up(boinc)
+                rv = this.bump_up()
             elif not this.at_maximum():
                 raise_delay += 1
                 logger.debug("Loop: %i; Steal: %.1f; incrementing raise delay: %i", 
@@ -113,9 +115,9 @@ class Boinc_Server:
             
             if rv:
                 logger.info("Loop: %i; Steal: %.1f; cpus: %i; limit: %i%%", 
-                    loop_num, stealtime, boinc.get_max_cpus(), boinc.get_cpu_limit())
-                boinc.write_global_prefs()
-                boinc.reload_global_prefs()
+                    loop_num, stealtime, this.boinc.get_max_cpus(), this.boinc.get_cpu_limit())
+                this.boinc.write_global_prefs()
+                this.boinc.reload_global_prefs()
     
 
     
