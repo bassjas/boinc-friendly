@@ -30,6 +30,8 @@ class Boinc_Server:
         this.total_cpus = num_cpus
         this.steal_bump_down = steal_bump_down
         this.steal_emergency = steal_emergency
+        this.loop_num = 0
+        this.raise_delay = 0
 
         # Read current boinc values for this server
         this.boinc = Boinc()
@@ -91,15 +93,23 @@ class Boinc_Server:
 
         return rv
 
+    def status(this):
+        """Can be called to log and return operational status, maybe at a given interval
+            or when a signal is caught"""
+        rv = "Loop: {}; raise delay: {}; cpus: {}; limit: {}%".format(this.loop_num, 
+            this.raise_delay, this.current_cpus, this.current_limit)
+        logger.info(rv)
+        return rv
+
     def boinc_loop(this):
         logger.info("Beginning loop")
         logger.info("Max cpus: %i%%; cpu limit: %i%%", this.boinc.get_max_cpus(),
                 this.boinc.get_cpu_limit())
-        raise_delay = 0
-        loop_num = 0
+        this.raise_delay = 0
+        this.loop_num = 0
         #while True:
         while True:
-            loop_num += 1
+            this.loop_num += 1
             # Average steal time from top for 10 seconds
             seconds = 10
             steal = 0
@@ -111,19 +121,19 @@ class Boinc_Server:
             # Does steal time indicate we should bump up or down?
             rv = False
             if stealtime > this.steal_bump_down:
-                raise_delay = 0
+                this.raise_delay = 0
                 rv = this.bump_down(stealtime > this.steal_emergency)
-            elif raise_delay > 2:
-                raise_delay = 0
+            elif this.raise_delay > 2:
+                this.raise_delay = 0
                 rv = this.bump_up()
             elif not this.at_maximum():
-                raise_delay += 1
+                this.raise_delay += 1
                 logger.debug("Loop: %i; Steal: %.1f; incrementing raise delay: %i", 
-                    loop_num, stealtime, raise_delay)
+                    this.loop_num, stealtime, this.raise_delay)
             
             if rv:
                 logger.info("Loop: %i; Steal: %.1f; cpus: %i; limit: %i%%", 
-                    loop_num, stealtime, this.boinc.get_max_cpus(), this.boinc.get_cpu_limit())
+                    this.loop_num, stealtime, this.boinc.get_max_cpus(), this.boinc.get_cpu_limit())
                 this.boinc.write_global_prefs()
                 this.boinc.reload_global_prefs()
     
