@@ -4,6 +4,8 @@ import time
 from datetime import datetime, timedelta
 from boinc import Boinc
 from top import Top
+import sys
+import signal
 
 #logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
@@ -41,6 +43,10 @@ class Boinc_Server:
     def at_minimum(this):
         return this.current_cpus == 1 and this.current_limit <= 20
 
+    def cpu_as_percent(this):
+        """ Return the current number of CPUs in use as a percentage of total CPUs"""
+        return int(this.current_cpus / this.total_cpus * 100)
+
     def bump_down(this, emergency=False):
         """
             Parameters:
@@ -51,11 +57,13 @@ class Boinc_Server:
         """
         rv = True
         if emergency:
-            this.boinc.set_max_cpus(int(100 / this.total_cpus))
-            this.boinc.set_cpu_limit(20)
+            this.current_cpus = 1
+            this.current_limit = 20
+            this.boinc.set_max_cpus(this.cpu_as_percent())
+            this.boinc.set_cpu_limit(this.current_limit)
         elif this.current_cpus > 1:
             this.current_cpus -= 1
-            this.boinc.set_max_cpus(int(this.current_cpus / this.total_cpus * 100))
+            this.boinc.set_max_cpus(this.cpu_as_percent())
         elif this.current_limit > 20:
             this.current_limit -= 10
             this.boinc.set_cpu_limit(this.current_limit)
@@ -71,12 +79,12 @@ class Boinc_Server:
             rv - True if we increased the level of effort, False otherwise
         """
         rv = True
-        if this.current_limit < 100:
+        if this.current_limit < 91:
             this.current_limit += 10
             this.boinc.set_cpu_limit(this.current_limit)
         elif this.current_cpus < this.total_cpus:
             this.current_cpus += 1
-            this.boinc.set_max_cpus(int(this.current_cpus / this.total_cpus * 100))
+            this.boinc.set_max_cpus(this.cpu_as_percent())
         else:
             # Already at highest level of effort
             rv = False
