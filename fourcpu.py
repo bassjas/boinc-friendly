@@ -1,7 +1,7 @@
 from boinc_server import Boinc_Server
 import signal
 
-server  = None
+server = Boinc_Server(num_cpus=4, steal_bump_down=1, steal_emergency=10)
 
 def signal_handler(sig, frame):
     if sig == signal.SIGUSR1:
@@ -10,7 +10,6 @@ def signal_handler(sig, frame):
 
 def main():
     signal.signal(signal.SIGUSR1, signal_handler)
-    server = Boinc_Server(num_cpus=4, steal_bump_down=1, steal_emergency=10)
     server.boinc_loop()
 
 if __name__ == "__main__":
