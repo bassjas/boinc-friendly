@@ -19,7 +19,7 @@ class StealQueue:
     def __init__(self):
         self.dq = deque(maxlen = 600)
 
-    def runProcess(exe):    
+    def runProcess(self, exe):    
         p = subprocess.Popen(exe, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         while(True):
             # returns None while subprocess is running
