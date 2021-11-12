@@ -28,12 +28,15 @@ class StealQueue:
             line = p.stdout.readline()
             yield line
             if retcode is not None:
-                break
-
-    
+                break 
 
     def get_average(self, seconds = 1):
-        pass
+        # It's an error if seconds is not >=1 and <=600
+        mylist = list(self.dq)[:seconds]
+        total = 0
+        for i in mylist:
+            total = total + i
+        return int(total / seconds)
 
     def get_10sec(self):
         return self.get_average(10)
@@ -51,7 +54,12 @@ class StealQueue:
         for line in self.runProcess('/usr/bin/vmstat 1'.split()):
             line = line.rstrip()
             first, last = line.rsplit(maxsplit=1)
-            print("steal: {}".format(last))
+            try:
+                stealtime = int(last)
+                self.dq.append(stealtime)
+                print(self.dq)
+            except ValueError:
+                pass # vmstat periodically prints column headers, not data
 
     def _main():
         sq = StealQueue()
