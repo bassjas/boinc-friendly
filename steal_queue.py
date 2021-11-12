@@ -50,7 +50,7 @@ class StealQueue:
     def start(self):
         for line in self.runProcess('/usr/bin/vmstat 1'.split()):
             line = line.rstrip()
-            first, last = line.rsplit(" ", 1)
+            first, last = line.rsplit(maxsplit=1)
             print("steal: {}".format(last))
 
     def _main():
