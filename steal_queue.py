@@ -49,7 +49,9 @@ class StealQueue:
 
     def start(self):
         for line in self.runProcess('/usr/bin/vmstat 1'.split()):
-            print(line)
+            line = line.rstrip()
+            first, last = line.rsplit()
+            print("steal: {}".format(last))
 
     def _main():
         sq = StealQueue()
@@ -57,7 +59,7 @@ class StealQueue:
         t1.start()
 
         while True:
-            time.sleep(1)
+            time.sleep(3)
             print('From main thread')
     
 if __name__ == "__main__":
