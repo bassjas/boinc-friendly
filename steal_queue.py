@@ -1,6 +1,7 @@
 from collections import deque
 import time
 import threading
+import subprocess
 
 class StealQueue:
     """Return the current steal time, or an average steal time for the
