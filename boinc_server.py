@@ -3,9 +3,11 @@ import logging
 import time
 from datetime import datetime, timedelta
 from boinc import Boinc
-from top import Top
+#from top import Top
+from steal_queue import StealQueue
 import sys
 import signal
+import threading
 
 #logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
@@ -107,16 +109,14 @@ class Boinc_Server:
                 this.boinc.get_cpu_limit())
         this.raise_delay = 0
         this.loop_num = 0
-        #while True:
+        stealq = StealQueue()
+        t1 = threading.Thread(target=stealq.loop)
+        t1.start()
+
         while True:
+            time.sleep(10)
             this.loop_num += 1
-            # Average steal time from top for 10 seconds
-            seconds = 10
-            steal = 0
-            for counter in range(seconds):
-                steal += Top().get_stealtime()
-                time.sleep(1)
-            stealtime = steal / seconds
+            stealtime = stealq.get_average(10)
             
             # Does steal time indicate we should bump up or down?
             rv = False

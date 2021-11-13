@@ -2,6 +2,7 @@ from collections import deque
 import time
 import threading
 import subprocess
+import logging
 
 class StealQueue:
     """Return the current steal time, or an average steal time for the
@@ -32,7 +33,9 @@ class StealQueue:
         total = 0
         for i in mylist:
             total = total + i
-        return int(total / seconds)
+        stealtime = int(round(total / seconds))
+        #logging.debug("get_average called: {} second steal was {}".format(seconds, stealtime))
+        return stealtime
 
     def runProcess(self, exe):    
         p = subprocess.Popen(exe, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -55,7 +58,6 @@ class StealQueue:
             try:
                 stealtime = int(last)
                 self.dq.appendleft(stealtime)
-                print(self.dq)
             except ValueError:
                 pass # vmstat periodically prints column headers, not data
 
